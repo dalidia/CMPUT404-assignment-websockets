@@ -63,6 +63,13 @@ class World:
 
 myWorld = World()        
 
+def send_all(msg):
+    for client in clients:
+        client.put( msg )
+
+def send_all_json(obj):
+    send_all( json.dumps(obj) )
+
 class Client:
     def __init__(self):
         self.queue = queue.Queue()
@@ -99,10 +106,7 @@ def read_ws(ws,client):
                 packet_obj = json.loads(msg)
                 # myWorld.update_listeners(packet_obj)
                 # # TODO: change this
-                for client_temp in clients:
-                    client_temp.put(packet_obj)
-
-                print("PACKET", packet_obj)
+                send_all_json( packet_obj )
             else:
                 break
     except Exception as e:
@@ -125,9 +129,8 @@ def subscribe_socket(ws):
     try:
         while True:
             # TODO: change this to give the world state
-            data = client.get()
-            print("I am here")
-            ws.send(json.dumps({"data":data}))
+            msg = client.get()
+            ws.send(msg)
     except Exception as e:
         print("WS Error %s" % e)
     finally:
