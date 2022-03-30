@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
-# Copyright (c) 2011-2014, Sylvain Hellegouarch, Abram Hindle
+# Copyright (c) 2011-2014, Sylvain Hellegouarch, Abram Hindle, 2022 Lidia Ataupillco Ramos
 # All rights reserved.
 # 
 # Redistribution and use in source and binary forms, with or without
@@ -40,9 +40,9 @@ import json
 
 world = dict()
 # set this to something sane 
-calls = 3000
+# calls = 3000
 # ugh there's too much output? Well drop calls down
-# calls = 100
+calls = 10
 
 def utf8(utf8bytes):
     return utf8bytes.decode("utf-8")
@@ -93,8 +93,8 @@ class WorldClient(WebSocketClient):
         
 if __name__ == '__main__':
     try:
-        os.system("kill -9 $(lsof -t -i:8000)");
-        os.system("bash run.sh &");
+        os.system("kill -9 $(lsof -t -i:8000)")
+        os.system("bash run.sh &")
         print("Sleeping 3 seconds")
         gevent.sleep(3)
         ws = WorldClient('ws://127.0.0.1:8000/subscribe', protocols=['http-only', 'chat'])
@@ -103,8 +103,8 @@ if __name__ == '__main__':
         ws2.daemon = False
         ws.name = "Reader/Writer"
         ws2.name = "Reader"
-        ws.connect()     
-        ws2.connect()     
+        ws.connect()
+        ws2.connect()
         ''' what we're doing here is that we're sending new entities and getting them
             back on the websocket '''
         greenlets = [
@@ -125,6 +125,6 @@ if __name__ == '__main__':
         ws.close()
         ws2.close()
         gevent.sleep(1)
-        os.system("kill -9 $(lsof -t -i:8000)");
+        os.system("kill -9 $(lsof -t -i:8000)")
         print("Sleeping 2 seconds")
         gevent.sleep(2)
