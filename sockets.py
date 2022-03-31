@@ -54,6 +54,8 @@ class World:
 
     def clear(self):
         self.space = dict()
+        # TODO: maybe remove this?
+        self.listeners = list()
 
     def get(self, entity):
         return self.space.get(entity,dict())
@@ -61,14 +63,13 @@ class World:
     def world(self):
         return self.space
 
+def set_listener( entity, data ):
+    ''' do something with the update ! '''
+    myWorld.world()[entity] = data
+    # get entity data, check if entity data is the same as data. if it's the same, return {}. If not, return world
+
 myWorld = World()        
-
-def send_all(msg):
-    for client in clients:
-        client.put( msg )
-
-def send_all_json(obj):
-    send_all( json.dumps(obj) )
+myWorld.add_set_listener( set_listener )
 
 class Client:
     def __init__(self):
@@ -80,14 +81,6 @@ class Client:
     def get(self):
         return self.queue.get()
 
-# TODO: I think there's an issue with the set_listener
-def set_listener( entity, data ):
-    ''' do something with the update ! '''
-    myWorld.set( entity, data )
-    print("I CAME HERE")
-
-myWorld.add_set_listener( set_listener )
-
 @app.route('/')
 def hello():
     '''Return something coherent here.. perhaps redirect to /static/index.html '''
@@ -95,18 +88,24 @@ def hello():
 
 def read_ws(ws,client):
     '''A greenlet function that reads from the websocket and updates the world'''
-    # XXX: TODO IMPLEMENT ME
+
     try:
         while True:
             msg = ws.receive()
             print("WS RECV: %s", msg)
-            print("WS TYPE: %s", type(msg))
 
             if msg is not None:
                 packet_obj = json.loads(msg)
-                # myWorld.update_listeners(packet_obj)
-                # # TODO: change this
-                send_all_json( packet_obj )
+                print("PACKET OBJ: %s" % packet_obj)
+                entity = get_entity(packet_obj)
+
+                # update the world
+                for entity in packet_obj:
+                    for key in packet_obj[entity]:
+                        myWorld.update(entity, key, packet_obj[entity][key])
+                
+                for client_temp in clients:
+                    client_temp.put(json.dumps(packet_obj))
             else:
                 break
     except Exception as e:
@@ -118,17 +117,16 @@ def read_ws(ws,client):
 def subscribe_socket(ws):
     '''Fufill the websocket URL of /subscribe, every update notify the
         websocket and read updates from the websocket '''
+    
     # initializing the clients
     client = Client()
     clients.append(client)
 
     # read from the websocket
     g = gevent.spawn( read_ws, ws, client)
-    print("DO I GO HERE?")
 
     try:
         while True:
-            # TODO: change this to give the world state
             msg = client.get()
             ws.send(msg)
     except Exception as e:
@@ -136,6 +134,8 @@ def subscribe_socket(ws):
     finally:
         clients.remove(client)
         gevent.kill(g)
+        # TODO: should I keep this?
+        myWorld.clear()
 
     return None
 
