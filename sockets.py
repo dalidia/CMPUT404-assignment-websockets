@@ -54,7 +54,6 @@ class World:
 
     def clear(self):
         self.space = dict()
-        # TODO: maybe remove this?
         self.listeners = list()
 
     def get(self, entity):
@@ -66,7 +65,6 @@ class World:
 def set_listener( entity, data ):
     ''' do something with the update ! '''
     myWorld.world()[entity] = data
-    # get entity data, check if entity data is the same as data. if it's the same, return {}. If not, return world
 
 myWorld = World()        
 myWorld.add_set_listener( set_listener )
@@ -96,7 +94,6 @@ def read_ws(ws,client):
 
             if msg is not None:
                 packet_obj = json.loads(msg)
-                print("PACKET OBJ: %s" % packet_obj)
                 entity = get_entity(packet_obj)
 
                 # update the world
@@ -134,8 +131,6 @@ def subscribe_socket(ws):
     finally:
         clients.remove(client)
         gevent.kill(g)
-        # TODO: should I keep this?
-        myWorld.clear()
 
     return None
 

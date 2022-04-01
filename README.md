@@ -17,6 +17,10 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
+Collaboration
+========================
+Collaborated with Della Humanita (ccid: humanita)
+
 Contributors / Licensing
 ========================
 

@@ -52,8 +52,12 @@
                 var x = entity["x"];
                 var y = entity["y"];
                 //moveTo(x,y);
+                setLineDash([5, 7]);
                 fillStyle = entity["colour"];
                 strokeStyle = fillStyle;
+                shadowColor = 'yellow';
+                shadowBlur = 20;
+
                 arc(x, y, (entity["radius"])?entity["radius"]:50, 0, 2.0 * Math.PI, false);  
                 stroke();                                
             }
@@ -121,11 +125,38 @@
             }
         }
 
+        function makeAPIrequest(url, objects, callback, method="GET") {
+            let extra = {};
+            if (method === "POST") {
+                extra = {
+                    body: JSON.stringify(objects),
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                };
+            }
+
+            // TODO: change this
+            fetch(url, {
+                method,
+                ...extra
+            }).then(function(response) {
+                return response.json();
+            }).then(function(json) {
+                callback(json);
+            });
+        }
+
         function addEntity(entity, data) {
             world[entity] = data;
-            drawNextFrame(); // (but should we?)
             //XXX: Send a XHTML Request that updates the entity you just modified!
             // TODO: send a message to the websocket server
+            // makeAPIrequest(`http://${host}/entity/${entity}`, data, prepEntity, "POST");
+            socket.send(JSON.stringify({
+                [entity]: data
+            }));
+            drawNextFrame(); // (but should we?)
+            drawFrame();
         }
         var counter = 0;
         function addEntityWithoutName(data) {
@@ -232,16 +263,16 @@
         // Add the application specific mouse listeners!
         //XXX: TODO Make these prettier!
         mouse.mousedowners.push(function(x,y,clicked,e) {
-            addEntityWithoutName({'x':x,'y':y,'colour':'blue'});
+            addEntityWithoutName({'x':x,'y':y,'colour':'#09b8e8'});
         });
 
         mouse.mouseuppers.push(function(x,y,clicked,e) {
-            addEntityWithoutName({'x':x,'y':y,'colour':'red'});
+            addEntityWithoutName({'x':x,'y':y,'colour':'#9c4471'});
         });
 
         mouse.mousedraggers.push(function(x,y,clicked,e) {
-            addEntityWithoutName({'x':x,'y':y,'colour':'green',
-                                'radius':10});
+            addEntityWithoutName({'x':x,'y':y,'colour':'#7a9299',
+                                'radius':15});
         });
 
 
@@ -257,15 +288,36 @@
                 //XXX: TODO What are you going to do here?
                 // initialize values
                 alert("Connected!");
+                // make call to get world state
+                makeAPIrequest(`http://${host}/world`, null, (json) => {
+                    world = json;
+                    drawNextFrame();
+                    drawFrame();
+                });
             };
             socket.onerror = function(msg) {
                 debug("WebSocket Error:" + msg.data);
+                alert("THERE WAS AN ERROR");
             };
             socket.onmessage = function(msg) {  
                 try {
                     debug("WebSocket Recv:" + msg.data);
+                    try {
+                        let entity = JSON.parse(msg.data);
+
+                        // for (single in entity) {
+                        let key = Object.keys(entity)[0];
+                        let data = Object.values(entity)[0];
+                        world[key] = data;
+                        prepEntity(Object.values(entity)[0]);
+                        drawNextFrame(); // (but should we?)
+                        drawFrame();
+
+                    } catch (e) {
+                        debug("JSON Parse Error:" + e);
+                        return;
+                    }
                     // TODO check this entity
-                    let entity = JSON.parse(msg.data);
                     //XXX: TODO What are you going to do here?            
                     // TODO: read the message from the websocket server and update the world
                 } catch (e) {
